@@ -1,0 +1,283 @@
+/**
+ * Speero Chatbot Widget
+ * Embeddable chatbot for speero.com
+ * Version: 1.0.0
+ */
+
+(function() {
+  'use strict';
+
+  const SpeeroChatbot = {
+    config: {
+      apiEndpoint: '',
+      contactUrl: 'https://speero.com/#main-form',
+      theme: 'auto',
+      position: 'bottom-right',
+      showDisclaimer: true
+    },
+
+    state: {
+      isOpen: false,
+      messages: [],
+      isLoading: false
+    },
+
+    init: function(userConfig) {
+      this.config = { ...this.config, ...userConfig };
+      this.createWidget();
+      this.attachEventListeners();
+      this.loadMessageHistory();
+    },
+
+    createWidget: function() {
+      const widgetHTML = `
+        <div id="speero-chatbot-container" class="speero-chatbot-${this.config.position}">
+          <!-- Chat Bubble -->
+          <button id="speero-chat-bubble" class="speero-chat-bubble" aria-label="Open chat">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </button>
+
+          <!-- Chat Window -->
+          <div id="speero-chat-window" class="speero-chat-window" style="display: none;">
+            <!-- Header -->
+            <div class="speero-chat-header">
+              <div class="speero-header-content">
+                <h3>Speero Assistant</h3>
+                <p>Ask us anything about our services</p>
+              </div>
+              <button id="speero-close-chat" class="speero-close-btn" aria-label="Close chat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Messages -->
+            <div id="speero-messages" class="speero-messages">
+              <div class="speero-message speero-bot-message">
+                <div class="speero-message-content">
+                  <p>👋 Hi! I'm the Speero AI assistant. I can help you learn about our experimentation services, case studies, and expertise. How can I help you today?</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="speero-input-area">
+              <input 
+                type="text" 
+                id="speero-message-input" 
+                class="speero-message-input" 
+                placeholder="Ask a question..."
+                maxlength="1000"
+              />
+              <button id="speero-send-btn" class="speero-send-btn" aria-label="Send message">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Disclaimer -->
+            ${this.config.showDisclaimer ? `
+              <div class="speero-disclaimer">
+                <small>${this.config.disclaimerText || 'AI-powered assistant. Responses may not be 100% accurate. Contact us for official guidance.'}</small>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', widgetHTML);
+    },
+
+    attachEventListeners: function() {
+      const bubble = document.getElementById('speero-chat-bubble');
+      const closeBtn = document.getElementById('speero-close-chat');
+      const sendBtn = document.getElementById('speero-send-btn');
+      const input = document.getElementById('speero-message-input');
+
+      bubble.addEventListener('click', () => this.toggleChat());
+      closeBtn.addEventListener('click', () => this.toggleChat());
+      sendBtn.addEventListener('click', () => this.sendMessage());
+      
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.sendMessage();
+        }
+      });
+    },
+
+    toggleChat: function() {
+      const window = document.getElementById('speero-chat-window');
+      const bubble = document.getElementById('speero-chat-bubble');
+      
+      this.state.isOpen = !this.state.isOpen;
+      
+      if (this.state.isOpen) {
+        window.style.display = 'flex';
+        bubble.style.display = 'none';
+        document.getElementById('speero-message-input').focus();
+      } else {
+        window.style.display = 'none';
+        bubble.style.display = 'flex';
+      }
+    },
+
+    sendMessage: async function() {
+      const input = document.getElementById('speero-message-input');
+      const query = input.value.trim();
+
+      if (!query || this.state.isLoading) return;
+
+      // Add user message to UI
+      this.addMessage(query, 'user');
+      input.value = '';
+
+      // Show loading
+      this.state.isLoading = true;
+      const loadingId = this.addLoadingMessage();
+
+      try {
+        // Call API
+        const response = await fetch(`${this.config.apiEndpoint}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response');
+        }
+
+        const data = await response.json();
+
+        // Remove loading message
+        this.removeMessage(loadingId);
+
+        // Add bot response
+        this.addMessage(data.response, 'bot', data.sources, data.show_contact_cta ? {
+          url: data.contact_url,
+          message: data.contact_message
+        } : null);
+
+      } catch (error) {
+        console.error('Chat error:', error);
+        this.removeMessage(loadingId);
+        this.addMessage('Sorry, I encountered an error. Please try again or contact us directly.', 'bot');
+      } finally {
+        this.state.isLoading = false;
+      }
+    },
+
+    addMessage: function(text, sender, sources = [], contactCTA = null) {
+      const messagesContainer = document.getElementById('speero-messages');
+      const messageId = 'msg-' + Date.now();
+      
+      let sourcesHTML = '';
+      if (sources && sources.length > 0) {
+        sourcesHTML = `
+          <div class="speero-sources">
+            <p><strong>Sources:</strong></p>
+            <ul>
+              ${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      let ctaHTML = '';
+      if (contactCTA) {
+        ctaHTML = `
+          <div class="speero-cta">
+            <a href="${contactCTA.url}" target="_blank" class="speero-cta-btn">
+              ${contactCTA.message} →
+            </a>
+          </div>
+        `;
+      }
+
+      const messageHTML = `
+        <div id="${messageId}" class="speero-message speero-${sender}-message">
+          <div class="speero-message-content">
+            <p>${this.escapeHTML(text)}</p>
+            ${sourcesHTML}
+            ${ctaHTML}
+          </div>
+        </div>
+      `;
+
+      messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
+      this.scrollToBottom();
+      
+      // Save to history
+      this.state.messages.push({ text, sender, sources, contactCTA, timestamp: Date.now() });
+      this.saveMessageHistory();
+
+      return messageId;
+    },
+
+    addLoadingMessage: function() {
+      const messagesContainer = document.getElementById('speero-messages');
+      const loadingId = 'loading-' + Date.now();
+      
+      const loadingHTML = `
+        <div id="${loadingId}" class="speero-message speero-bot-message">
+          <div class="speero-message-content">
+            <div class="speero-loading">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      messagesContainer.insertAdjacentHTML('beforeend', loadingHTML);
+      this.scrollToBottom();
+      return loadingId;
+    },
+
+    removeMessage: function(messageId) {
+      const message = document.getElementById(messageId);
+      if (message) message.remove();
+    },
+
+    scrollToBottom: function() {
+      const messagesContainer = document.getElementById('speero-messages');
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+
+    escapeHTML: function(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    },
+
+    saveMessageHistory: function() {
+      try {
+        sessionStorage.setItem('speero-chat-history', JSON.stringify(this.state.messages));
+      } catch (e) {
+        console.warn('Failed to save chat history:', e);
+      }
+    },
+
+    loadMessageHistory: function() {
+      try {
+        const history = sessionStorage.getItem('speero-chat-history');
+        if (history) {
+          this.state.messages = JSON.parse(history);
+        }
+      } catch (e) {
+        console.warn('Failed to load chat history:', e);
+      }
+    }
+  };
+
+  // Expose globally
+  window.SpeeroChatbot = SpeeroChatbot;
+})();
