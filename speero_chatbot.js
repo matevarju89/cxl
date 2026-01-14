@@ -143,13 +143,24 @@
       const loadingId = this.addLoadingMessage();
 
       try {
-        // Call API
+        // Build conversation history for context
+        const conversationHistory = this.state.messages
+          .filter(msg => msg.sender === 'user' || msg.sender === 'bot')
+          .map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }));
+
+        // Call API with conversation history
         const response = await fetch(`${this.config.apiEndpoint}/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ query })
+          body: JSON.stringify({ 
+            query,
+            conversation_history: conversationHistory
+          })
         });
 
         if (!response.ok) {
@@ -206,7 +217,7 @@
       const messageHTML = `
         <div id="${messageId}" class="speero-message speero-${sender}-message">
           <div class="speero-message-content">
-            <p>${this.escapeHTML(text)}</p>
+            <div class="speero-message-text">${this.parseMarkdown(text)}</div>
             ${sourcesHTML}
             ${ctaHTML}
           </div>
@@ -250,6 +261,36 @@
     scrollToBottom: function() {
       const messagesContainer = document.getElementById('speero-messages');
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+
+    parseMarkdown: function(text) {
+      // 1. Sanitize first (prevents XSS)
+      let html = this.escapeHTML(text);
+
+      // 2. Headers (### Heading)
+      html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+
+      // 3. Bold (**text**)
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+      // 4. Italic (*text*)
+      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+      // 5. Links ([text](url))
+      html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+      // 6. Lists
+      // Transform "- item" into bullet points with breaks
+      html = html.replace(/(?:^|\n)- (.*)/g, '<br>• $1');
+      
+      // 7. Paragraphs
+      // Double newlines become paragraph breaks
+      html = html.replace(/\n\n/g, '<br><br>');
+      // Remaining single newlines become line breaks
+      html = html.replace(/\n/g, '<br>');
+
+      return html;
     },
 
     escapeHTML: function(text) {
