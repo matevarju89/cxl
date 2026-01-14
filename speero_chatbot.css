@@ -201,7 +201,39 @@
 }
 
 .speero-message-content p {
-  margin: 0;
+  margin: 0 0 8px 0;
+}
+
+.speero-message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.speero-message-content h2, 
+.speero-message-content h3 {
+  margin: 12px 0 8px 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.speero-message-content h2:first-child,
+.speero-message-content h3:first-child {
+  margin-top: 0;
+}
+
+.speero-message-content ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.speero-message-content li {
+  margin: 4px 0;
+  list-style-type: disc;
+}
+
+.speero-message-content strong {
+  font-weight: 600;
+  color: inherit;
 }
 
 /* Sources */
