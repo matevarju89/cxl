@@ -1,7 +1,7 @@
 /**
  * Speero Chatbot Widget
  * Embeddable chatbot for speero.com
- * Version: 1.0.0
+ * Version: 1.1.0
  */
 
 (function() {
@@ -33,21 +33,21 @@
       const widgetHTML = `
         <div id="speero-chatbot-container" class="speero-chatbot-${this.config.position}">
           <!-- Chat Bubble -->
-          <button id="speero-chat-bubble" class="speero-chat-bubble" aria-label="Open chat">
+          <button id="speero-chatbot-bubble" class="speero-chatbot-bubble" aria-label="Open chat">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
           </button>
 
           <!-- Chat Window -->
-          <div id="speero-chat-window" class="speero-chat-window" style="display: none;">
+          <div id="speero-chatbot-window" class="speero-chatbot-window" style="display: none;">
             <!-- Header -->
-            <div class="speero-chat-header">
-              <div class="speero-header-content">
+            <div class="speero-chatbot-header">
+              <div class="speero-chatbot-header-content">
                 <h3>Speero Assistant</h3>
                 <p>Ask us anything about our services</p>
               </div>
-              <button id="speero-close-chat" class="speero-close-btn" aria-label="Close chat">
+              <button id="speero-chatbot-close-btn" class="speero-chatbot-close-btn" aria-label="Close chat">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -56,24 +56,24 @@
             </div>
 
             <!-- Messages -->
-            <div id="speero-messages" class="speero-messages">
-              <div class="speero-message speero-bot-message">
-                <div class="speero-message-content">
-                  <p>👋 Hi! I'm the Speero AI assistant. I can help you learn about our experimentation services, case studies, and expertise. How can I help you today?</p>
+            <div id="speero-chatbot-messages" class="speero-chatbot-messages">
+              <div class="speero-chatbot-message speero-chatbot-bot-message">
+                <div class="speero-chatbot-message-content">
+                  <div class="speero-chatbot-message-text">👋 Hi! I'm the Speero AI assistant. I can help you learn about our experimentation services, case studies, and expertise. How can I help you today?</div>
                 </div>
               </div>
             </div>
 
             <!-- Input Area -->
-            <div class="speero-input-area">
+            <div class="speero-chatbot-input-area">
               <input 
                 type="text" 
-                id="speero-message-input" 
-                class="speero-message-input" 
+                id="speero-chatbot-input" 
+                class="speero-chatbot-input" 
                 placeholder="Ask a question..."
                 maxlength="1000"
               />
-              <button id="speero-send-btn" class="speero-send-btn" aria-label="Send message">
+              <button id="speero-chatbot-send-btn" class="speero-chatbot-send-btn" aria-label="Send message">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -83,7 +83,7 @@
 
             <!-- Disclaimer -->
             ${this.config.showDisclaimer ? `
-              <div class="speero-disclaimer">
+              <div class="speero-chatbot-disclaimer">
                 <small>${this.config.disclaimerText || 'AI-powered assistant. Responses may not be 100% accurate. Contact us for official guidance.'}</small>
               </div>
             ` : ''}
@@ -95,10 +95,10 @@
     },
 
     attachEventListeners: function() {
-      const bubble = document.getElementById('speero-chat-bubble');
-      const closeBtn = document.getElementById('speero-close-chat');
-      const sendBtn = document.getElementById('speero-send-btn');
-      const input = document.getElementById('speero-message-input');
+      const bubble = document.getElementById('speero-chatbot-bubble');
+      const closeBtn = document.getElementById('speero-chatbot-close-btn');
+      const sendBtn = document.getElementById('speero-chatbot-send-btn');
+      const input = document.getElementById('speero-chatbot-input');
 
       bubble.addEventListener('click', () => this.toggleChat());
       closeBtn.addEventListener('click', () => this.toggleChat());
@@ -113,15 +113,15 @@
     },
 
     toggleChat: function() {
-      const window = document.getElementById('speero-chat-window');
-      const bubble = document.getElementById('speero-chat-bubble');
+      const window = document.getElementById('speero-chatbot-window');
+      const bubble = document.getElementById('speero-chatbot-bubble');
       
       this.state.isOpen = !this.state.isOpen;
       
       if (this.state.isOpen) {
         window.style.display = 'flex';
         bubble.style.display = 'none';
-        document.getElementById('speero-message-input').focus();
+        document.getElementById('speero-chatbot-input').focus();
       } else {
         window.style.display = 'none';
         bubble.style.display = 'flex';
@@ -129,7 +129,7 @@
     },
 
     sendMessage: async function() {
-      const input = document.getElementById('speero-message-input');
+      const input = document.getElementById('speero-chatbot-input');
       const query = input.value.trim();
 
       if (!query || this.state.isLoading) return;
@@ -188,13 +188,13 @@
     },
 
     addMessage: function(text, sender, sources = [], contactCTA = null) {
-      const messagesContainer = document.getElementById('speero-messages');
+      const messagesContainer = document.getElementById('speero-chatbot-messages');
       const messageId = 'msg-' + Date.now();
       
       let sourcesHTML = '';
       if (sources && sources.length > 0) {
         sourcesHTML = `
-          <div class="speero-sources">
+          <div class="speero-chatbot-sources">
             <p><strong>Sources:</strong></p>
             <ul>
               ${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></li>`).join('')}
@@ -206,8 +206,8 @@
       let ctaHTML = '';
       if (contactCTA) {
         ctaHTML = `
-          <div class="speero-cta">
-            <a href="${contactCTA.url}" target="_blank" class="speero-cta-btn">
+          <div class="speero-chatbot-cta">
+            <a href="${contactCTA.url}" target="_blank" class="speero-chatbot-cta-btn">
               ${contactCTA.message} →
             </a>
           </div>
@@ -215,9 +215,9 @@
       }
 
       const messageHTML = `
-        <div id="${messageId}" class="speero-message speero-${sender}-message">
-          <div class="speero-message-content">
-            <div class="speero-message-text">${this.parseMarkdown(text)}</div>
+        <div id="${messageId}" class="speero-chatbot-message speero-chatbot-${sender}-message">
+          <div class="speero-chatbot-message-content">
+            <div class="speero-chatbot-message-text">${this.parseMarkdown(text)}</div>
             ${sourcesHTML}
             ${ctaHTML}
           </div>
@@ -235,13 +235,13 @@
     },
 
     addLoadingMessage: function() {
-      const messagesContainer = document.getElementById('speero-messages');
+      const messagesContainer = document.getElementById('speero-chatbot-messages');
       const loadingId = 'loading-' + Date.now();
       
       const loadingHTML = `
-        <div id="${loadingId}" class="speero-message speero-bot-message">
-          <div class="speero-message-content">
-            <div class="speero-loading">
+        <div id="${loadingId}" class="speero-chatbot-message speero-chatbot-bot-message">
+          <div class="speero-chatbot-message-content">
+            <div class="speero-chatbot-loading">
               <span></span><span></span><span></span>
             </div>
           </div>
@@ -259,7 +259,7 @@
     },
 
     scrollToBottom: function() {
-      const messagesContainer = document.getElementById('speero-messages');
+      const messagesContainer = document.getElementById('speero-chatbot-messages');
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     },
 
@@ -283,6 +283,9 @@
       // 6. Lists
       // Transform "- item" into bullet points with breaks
       html = html.replace(/(?:^|\n)- (.*)/g, '<br>• $1');
+      
+      // Transform numbered lists "1. Item" -> "<br>1. Item" to ensure spacing
+      html = html.replace(/(?:^|\n)(\d+\.) (.*)/g, '<br>$1 $2');
       
       // 7. Paragraphs
       // Double newlines become paragraph breaks
