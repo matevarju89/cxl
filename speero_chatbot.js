@@ -24,9 +24,24 @@
 
     init: function(userConfig) {
       this.config = { ...this.config, ...userConfig };
+      this.loadMarkedLibrary();
       this.createWidget();
       this.attachEventListeners();
       this.loadMessageHistory();
+    },
+
+    loadMarkedLibrary: function() {
+      if (window.marked) return;
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+      script.onload = () => {
+        // Configure marked to be safe
+        window.marked.use({
+          breaks: true,
+          gfm: true
+        });
+      };
+      document.head.appendChild(script);
     },
 
     createWidget: function() {
@@ -264,6 +279,13 @@
     },
 
     parseMarkdown: function(text) {
+      if (window.marked) {
+        // Use marked.js if available
+        return window.marked.parse(text);
+      }
+
+      // Fallback: Simple parser if marked isn't loaded yet
+      
       // 1. Sanitize first (prevents XSS)
       let html = this.escapeHTML(text);
 
