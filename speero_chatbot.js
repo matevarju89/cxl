@@ -210,7 +210,7 @@
       if (sources && sources.length > 0) {
         sourcesHTML = `
           <div class="speero-chatbot-sources">
-            <p><strong>Sources:</strong></p>
+            <p><strong>Useful Links:</strong></p>
             <ul>
               ${sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></li>`).join('')}
             </ul>
